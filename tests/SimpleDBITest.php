@@ -68,5 +68,15 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id = IN (:foo)', array('foo' => array(10, 20, 30)));
         $this->assertEquals('SELECT * FROM test WHERE id = IN (:foo_0, :foo_1, :foo_2)', $sql);
         $this->assertEquals(array(':foo_0' => 10, ':foo_1' => 20, ':foo_2' => 30), $params);
+
+        // IN 句の展開: named パラメータのとき + 数値添字配列
+        list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id = IN (:foo)', array('foo' => array(1 => 10, 4 => 40, 2 => 20)));
+        $this->assertEquals('SELECT * FROM test WHERE id = IN (:foo_1, :foo_4, :foo_2)', $sql);
+        $this->assertEquals(array(':foo_1' => 10, ':foo_2' => 20, ':foo_4' => 40), $params);
+
+        // IN 句の展開: named パラメータのとき + 文字添字配列
+        list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id = IN (:foo)', array('foo' => array('bar' => 10, 'baz' => 20, 'qux' => 40)));
+        $this->assertEquals('SELECT * FROM test WHERE id = IN (:foo_bar, :foo_baz, :foo_qux)', $sql);
+        $this->assertEquals(array(':foo_bar' => 10, ':foo_baz' => 20, ':foo_qux' => 40), $params);
     }
 }
