@@ -14,6 +14,7 @@ class SimpleDBI
     protected $dsn = null;      // DSN
     protected $st = null;       // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
+    protected $is_uncommitable = false; // commit可能な状態かどうか
 
     protected function __construct($dsn, $username, $password, $driver_options)
     {
@@ -112,6 +113,8 @@ class SimpleDBI
      *
      * このメソッドで、IN 句の展開に対応しています。
      *
+     * @param string $sql
+     * @param array $params
      * @return array パースされた SQL とパラメータ
      */
     public static function parseSQL($sql, array $params = array())
@@ -214,7 +217,9 @@ class SimpleDBI
     /**
      * SQL を実行する
      *
-     * @return void
+     * @param string $sql
+     * @param array $params
+     * @throws PDOException
      */
     public function query($sql, array $params = array())
     {
@@ -230,6 +235,8 @@ class SimpleDBI
     /**
      * SQL を実行して、結果から最初の1行を取得する
      *
+     * @param string $sql
+     * @param array $params
      * @return array|boolean 結果セットから最初の1行を配列で返す。結果が見つからなかったとき false を返す
      */
     public function row($sql, array $params = array())
@@ -241,7 +248,9 @@ class SimpleDBI
     /**
      * SQL を実行して、結果からすべての行を取得する
      *
-     * @return array|boolean 結果セットからすべての行を配列で返す。結果が見つからなかったとき空配列を返す
+     * @param string $sql
+     * @param array $params
+     * @return array 結果セットからすべての行を配列で返す。結果が見つからなかったとき空配列を返す
      */
     public function rows($sql, array $params = array())
     {
@@ -253,6 +262,8 @@ class SimpleDBI
     /**
      * SQL を実行して、結果から最初の1行の最初の値を取得する
      *
+     * @param string $sql
+     * @param array $params
      * @return mixed 結果セットの最初の1行の最初の値を返す。結果が見つからなかったとき false を返す
      */
     public function value($sql, array $params = array())
@@ -264,7 +275,8 @@ class SimpleDBI
     /**
      * 単純な INSERT 文を実行する
      *
-     * @return void
+     * @param string $table
+     * @param array $params
      */
     public function insert($table, array $params)
     {
@@ -277,9 +289,10 @@ class SimpleDBI
     /**
      * 単純な REPLACE 文を実行する
      *
-     * @return void
+     * @param string $table
+     * @param array $params
      */
-    public function replace($table, $params)
+    public function replace($table, array $params)
     {
         $cols = implode(', ', array_keys($params));
         $placeholders = implode(', ', str_split(str_repeat('?', count($params))));
@@ -290,9 +303,11 @@ class SimpleDBI
     /**
      * 単純な UPDATE 文を実行する
      *
-     * @return void
+     * @param string $table
+     * @param array $params
+     * @param array $where_params
      */
-    public function update($table, $params, $where_params)
+    public function update($table, array $params, array $where_params)
     {
         // 対象のカラム名と値
         $pairs = '';
@@ -365,6 +380,7 @@ class SimpleDBI
     {
         if (count($this->trans_stack) == 0) {
             $this->query('BEGIN');
+            $this->is_uncommitable = false;
         }
         array_push($this->trans_stack, 'A');
     }
@@ -373,11 +389,16 @@ class SimpleDBI
      * トランザクションをコミットする
      *
      * @return void
+     * @throws PDOException
      */
     public function commit()
     {
         if (count($this->trans_stack) <= 1) {
-            $this->query('COMMIT');
+            if ($this->is_uncommitable) {
+                throw new PDOException('Cannot commit because a nested transaction was rolled back');
+            } else {
+                $this->query('COMMIT');
+            }
         }
         array_pop($this->trans_stack);
     }
@@ -391,6 +412,8 @@ class SimpleDBI
     {
         if (count($this->trans_stack) <= 1) {
             $this->query('ROLLBACK');
+        } else {
+            $this->is_uncommitable = true;
         }
         array_pop($this->trans_stack);
     }
@@ -398,6 +421,7 @@ class SimpleDBI
     /**
      * 最後に INSERT した行の ID を取得する
      *
+     * @param $name
      * @return string 最後に INSERT した行の ID
      */
     public function lastInsertId($name = null)
