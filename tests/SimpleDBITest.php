@@ -64,6 +64,11 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         $this->assertEquals('SELECT * FROM test WHERE id IN (:foo_0, :foo_1, :foo_2) AND age IN (:age_0, :age_1)', $sql);
         $this->assertEquals(array(':foo_0' => 10, ':foo_1' => 20, ':foo_2' => 30, ':age_0' => 50, ':age_1' => 60), $params);
 
+        // IN 句の展開: named パラメータのとき + 同名の IN 句が複数
+        list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id IN (:foo) UNION SELECT * FROM test2 WHERE id IN (:foo)', array(':foo' => array(10, 20, 30)));
+        $this->assertEquals('SELECT * FROM test WHERE id IN (:foo_0, :foo_1, :foo_2) UNION SELECT * FROM test2 WHERE id IN (:foo_0, :foo_1, :foo_2)', $sql);
+        $this->assertEquals(array(':foo_0' => 10, ':foo_1' => 20, ':foo_2' => 30), $params);
+
         // IN 句の展開: named パラメータのとき + パラメータでコロンがついていないとき
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id IN (:foo)', array('foo' => array(10, 20, 30)));
         $this->assertEquals('SELECT * FROM test WHERE id IN (:foo_0, :foo_1, :foo_2)', $sql);
