@@ -174,7 +174,7 @@ class SimpleDBI
                             return $name;
                         }
                         $n = count($params[$key]);
-                        for ($i = 0; $i < $n; $i++) {
+                        foreach ($params[$key] as $i => $v) {
                             $name_i = "{$name}_{$i}";
                             $name_i_list[] = $name_i;
                             $params[$name_i] = $params[$key][$i];
