@@ -156,9 +156,11 @@ class SimpleDBI
                 // array(':foo_0' => 10, ':foo_1' => 20, ...) に展開する
                 //
 
+                $unset_keys = array();
+
                 $sql = preg_replace_callback(
                     '/:([A-Za-z_-]+)/',
-                    function($matches) use (&$params) {
+                    function($matches) use (&$params, &$unset_keys) {
 
                         $name = $matches[0]; // :name 形式の文字列
 
@@ -177,11 +179,17 @@ class SimpleDBI
                             $name_i_list[] = $name_i;
                             $params[$name_i] = $params[$key][$i];
                         }
-                        unset($params[$key]);
+                        $unset_keys[] = $key;
                         return join(', ', $name_i_list);
                     },
                     $sql
                 );
+
+                // 展開済みのキーをパラメータから削除
+                foreach ($unset_keys as $key) {
+                    unset($params[$key]);
+                }
+
             } else {
                 // 位置パラメータのとき
                 $a = explode('?', $sql);
