@@ -249,8 +249,8 @@ class SimpleDBI
      */
     public function row($sql, array $params = array())
     {
-        $this->query($sql, $params);
-        return $this->st->fetch(PDO::FETCH_ASSOC);
+        $rows = $this->rows($sql, $params);
+        return $rows ? $rows[0] : false;
     }
 
     /**
