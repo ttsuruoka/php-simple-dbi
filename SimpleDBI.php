@@ -277,6 +277,21 @@ class SimpleDBI
     }
 
     /**
+     * SQL を実行して、結果から指定した列のすべての行を取得する
+     *
+     * @param $sql
+     * @param array $params
+     * @param int $column_number
+     * @return array
+     */
+    public function columns($sql, array $params = array(), $column_number = 0)
+    {
+        $this->query($sql, $params);
+        $rows = $this->st->fetchAll(PDO::FETCH_COLUMN, $column_number);
+        return $rows ? $rows : array();
+    }
+
+    /**
      * 単純な INSERT 文を実行する
      *
      * @param string $table
