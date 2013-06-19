@@ -77,7 +77,8 @@ class SimpleDBI
     /**
      * データベースインスタンスに接続完了時に呼ばれるメソッド
      *
-     * @return void
+     * このメソッドはオーバーライドして使います。
+     *
      */
     protected function onConnect()
     {
@@ -88,13 +89,8 @@ class SimpleDBI
      *
      * このメソッドはオーバーライドして使います。
      *
-     * 例）実行時間をデバッグ出力
-     *
-     *   Log::debug($this->st->exec_time);
-     *
      * @param string $sql 実行した SQL
      * @param array $params SQL にバインドされたパラメータ
-     * @return void
      */
     protected function onQueryEnd($sql, array $params = array())
     {
@@ -382,7 +378,6 @@ class SimpleDBI
      *
      * ネストランザクションに対応しています。
      *
-     * @return void
      */
     public function begin()
     {
@@ -397,7 +392,6 @@ class SimpleDBI
     /**
      * トランザクションをコミットする
      *
-     * @return void
      * @throws PDOException
      */
     public function commit()
@@ -416,7 +410,6 @@ class SimpleDBI
     /**
      * トランザクションをロールバックする
      *
-     * @return void
      */
     public function rollback()
     {
