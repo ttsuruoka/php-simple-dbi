@@ -387,7 +387,8 @@ class SimpleDBI
     public function begin()
     {
         if (count($this->trans_stack) == 0) {
-            $this->query('BEGIN');
+            $this->pdo->beginTransaction();
+            $this->onQueryEnd('BEGIN');
             $this->is_uncommitable = false;
         }
         array_push($this->trans_stack, 'A');
@@ -405,7 +406,8 @@ class SimpleDBI
             if ($this->is_uncommitable) {
                 throw new PDOException('Cannot commit because a nested transaction was rolled back');
             } else {
-                $this->query('COMMIT');
+                $this->pdo->commit();
+                $this->onQueryEnd('COMMIT');
             }
         }
         array_pop($this->trans_stack);
@@ -419,7 +421,8 @@ class SimpleDBI
     public function rollback()
     {
         if (count($this->trans_stack) <= 1) {
-            $this->query('ROLLBACK');
+            $this->pdo->rollBack();
+            $this->onQueryEnd('ROLLBACK');
         } else {
             $this->is_uncommitable = true;
         }
