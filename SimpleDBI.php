@@ -277,7 +277,7 @@ class SimpleDBI
     }
 
     /**
-     * SQL を実行して、結果から指定した列のすべての行を取得する
+     * SQL を実行して、結果から指定した列のみを含むすべての行を取得する
      *
      * @param $sql
      * @param array $params
