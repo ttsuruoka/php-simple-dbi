@@ -6,8 +6,6 @@
  * @author Tatsuya Tsuruoka <http://github.com/ttsuruoka>
  */
 
-require_once __DIR__ . '/SimpleDBIStatement.php';
-
 class SimpleDBI
 {
     protected $pdo = null;      // PDO インスタンス
@@ -34,8 +32,8 @@ class SimpleDBI
      *
      * このメソッドは、SimpleDBI クラスのサブクラスでオーバーライドして使われます。
      *
-     * @param string $destination 接続先
-     * @return array DSN などの接続設定の配列
+     * @param  string $destination 接続先
+     * @return array  DSN などの接続設定の配列
      */
     public static function getConnectSettings($destination = null)
     {
@@ -52,11 +50,11 @@ class SimpleDBI
      *
      * $destination は、接続先をあらわす文字列で、
      * 場合によっては データベースのホスト名と一致しないこともあります。
-     * 
+     *
      * $destination から実際に接続するデータベースの設定を取得するために、
      * getConnectSettings() メソッドを呼び出します。
      *
-     * @param string $destination 接続先
+     * @param  string    $destination 接続先
      * @return SimpleDBI
      */
     public static function conn($destination = null)
@@ -71,6 +69,7 @@ class SimpleDBI
 
         $instances[$dsn] = new static($dsn, $username, $password, $driver_options);
         $instances[$dsn]->onConnect();
+
         return $instances[$dsn];
     }
 
@@ -89,8 +88,13 @@ class SimpleDBI
      *
      * このメソッドはオーバーライドして使います。
      *
-     * @param string $sql 実行した SQL
-     * @param array $params SQL にバインドされたパラメータ
+     * 例）実行時間をデバッグ出力
+     *
+     *   Log::debug($this->st->exec_time);
+     *
+     * @param  string $sql    実行した SQL
+     * @param  array  $params SQL にバインドされたパラメータ
+     * @return void
      */
     protected function onQueryEnd($sql, array $params = array())
     {
@@ -176,6 +180,7 @@ class SimpleDBI
                             $params[$name_i] = $params[$key][$i];
                         }
                         $unset_keys[] = $key;
+
                         return join(', ', $name_i_list);
                     },
                     $sql
@@ -246,6 +251,7 @@ class SimpleDBI
     public function row($sql, array $params = array())
     {
         $rows = $this->rows($sql, $params);
+
         return $rows ? $rows[0] : false;
     }
 
@@ -260,6 +266,7 @@ class SimpleDBI
     {
         $this->query($sql, $params);
         $rows = $this->st->fetchAll(PDO::FETCH_ASSOC);
+
         return $rows ? $rows : array();
     }
 
@@ -273,6 +280,7 @@ class SimpleDBI
     public function value($sql, array $params = array())
     {
         $row = $this->row($sql, $params);
+
         return $row ? current($row) : false;
     }
 
@@ -352,12 +360,12 @@ class SimpleDBI
      * 使用例：
      * $this->search('item', 'id BETWEEN ? AND ?', array(1000, 1999), 'id DESC', array(1, 10));
      *
-     * @param string $table 対象のテーブル名
-     * @param string $where WHERE 句
-     * @param array $params 束縛するパラメータ
-     * @param string $order ORDER 句（オプション）
-     * @param string $limit LIMIT 句（オプション）
-     * @param array $options その他のオプション
+     * @param string $table   対象のテーブル名
+     * @param string $where   WHERE 句
+     * @param array  $params  束縛するパラメータ
+     * @param string $order   ORDER 句（オプション）
+     * @param string $limit   LIMIT 句（オプション）
+     * @param array  $options その他のオプション
      *                       select_expr キー：SELECT で取り出すカラム。デフォルトは * （全カラム）
      * @return array 取得結果を配列で返す。結果が見つからなかったとき空配列を返す
      */

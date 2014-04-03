@@ -1,0 +1,20 @@
+{
+    "name": "ttsuruoka/php-simple-dbi",
+    "description": "Simple database interface class for PHP PDO",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ttsuruoka",
+            "email": "ttsuruoka@php.net",
+            "role": "maintainer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": { },
+    "require-dev": {
+        "phpunit/phpunit": "3.7.*"
+    },
+    "autoload": {
+        "classmap": ["src/"]
+    }
+}

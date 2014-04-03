@@ -18,6 +18,7 @@ class SimpleDBIStatement extends PDOStatement
         $ts = microtime(true);
         $r = parent::execute($params);
         $this->exec_time = microtime(true) - $ts;
+
         return $r;
     }
 }
