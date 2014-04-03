@@ -1,6 +1,4 @@
 <?php
-require_once dirname(__DIR__).'/SimpleDBI.php';
-
 class SimpleDBITest extends PHPUnit_Framework_TestCase
 {
     public function test_parseSQL()
