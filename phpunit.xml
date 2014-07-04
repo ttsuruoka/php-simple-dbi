@@ -9,4 +9,16 @@
          stopOnFailure="false"
          syntaxCheck="false"
          bootstrap="tests/bootstrap.php">
-</phpunit>
+  <testsuite name="Test Suite">
+    <directory>./</directory>
+  </testsuite>
+
+  <filter>
+    <whitelist>
+      <directory>../</directory>
+      <exclude>
+        <directory>../vendor</directory>
+      </exclude>
+    </whitelist>
+  </filter>
+ </phpunit>
