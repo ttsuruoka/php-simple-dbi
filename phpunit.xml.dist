@@ -9,6 +9,7 @@
          stopOnFailure="false"
          syntaxCheck="false"
          bootstrap="tests/bootstrap.php">
+
   <testsuite name="Test Suite">
     <directory>./tests</directory>
   </testsuite>
@@ -21,4 +22,11 @@
       </exclude>
     </whitelist>
   </filter>
+
+  <php>
+    <var name="DB_DSN" value="mysql:dbname=php_simple_dbi_test;host=localhost" />
+    <var name="DB_USERNAME" value="root" />
+    <var name="DB_PASSWORD" value="" />
+  </php>
+
  </phpunit>
