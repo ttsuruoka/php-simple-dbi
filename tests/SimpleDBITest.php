@@ -1,6 +1,45 @@
 <?php
 class SimpleDBITest extends PHPUnit_Framework_TestCase
 {
+    public static function setUpBeforeClass()
+    {
+        if (!defined('DB_DSN')) {
+            if (!isset($GLOBALS['DB_DSN'])) {
+                throw new Exception('DB_DSN is not defined');
+            }
+            define('DB_DSN', $GLOBALS['DB_DSN']);
+        }
+
+        if (!defined('DB_USERNAME')) {
+            if (!isset($GLOBALS['DB_USERNAME'])) {
+                throw new Exception('DB_USERNAME is not defined');
+            }
+            define('DB_USERNAME', $GLOBALS['DB_USERNAME']);
+        }
+
+        if (!defined('DB_PASSWORD')) {
+            if (!isset($GLOBALS['DB_PASSWORD'])) {
+                throw new Exception('DB_PASSWORD is not defined');
+            }
+            define('DB_PASSWORD', $GLOBALS['DB_PASSWORD']);
+        }
+    }
+
+    public function test_getConnectSettings()
+    {
+        list($dsn, $username, $password, $driver_options) = SimpleDBI::getConnectSettings();
+        $this->assertEquals(DB_DSN, $dsn);
+        $this->assertEquals(DB_USERNAME, $username);
+        $this->assertEquals(DB_PASSWORD, $password);
+        $this->assertEquals(array(), $driver_options);
+    }
+
+    public function test_conn()
+    {
+        $db = SimpleDBI::conn();
+        $this->assertInstanceOf('SimpleDBI', $db);
+    }
+
     public function test_parseSQL()
     {
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test');
