@@ -40,6 +40,29 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('SimpleDBI', $db);
     }
 
+    public function test_disconnect()
+    {
+        $db = SimpleDBI::conn();
+
+        $db->row('SHOW VARIABLES');
+
+        $db->disconnect();
+
+        try {
+            $db->row('SHOW VARIABLES');
+            $this->fail();
+        } catch (PDOException $e) {
+            $this->assertEquals('Database not connected', $e->getMessage());
+        }
+
+        try {
+            $db->begin();
+            $this->fail();
+        } catch (PDOException $e) {
+            $this->assertEquals('Database not connected', $e->getMessage());
+        }
+    }
+
     public function test_parseSQL()
     {
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test');
