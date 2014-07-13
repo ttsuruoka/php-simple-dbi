@@ -44,22 +44,51 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
     {
         $db = SimpleDBI::conn();
 
-        $db->row('SHOW VARIABLES');
+        $rows = $db->rows('SHOW VARIABLES');
+        $this->assertTrue(count($rows) > 0);
 
         $db->disconnect();
 
         try {
-            $db->row('SHOW VARIABLES');
+            $db->rows('SHOW VARIABLES');
             $this->fail();
-        } catch (PDOException $e) {
+        } catch (SimpleDBIException $e) {
             $this->assertEquals('Database not connected', $e->getMessage());
         }
 
         try {
             $db->begin();
             $this->fail();
-        } catch (PDOException $e) {
+        } catch (SimpleDBIException $e) {
             $this->assertEquals('Database not connected', $e->getMessage());
+        }
+
+        try {
+            $db->lastInsertId();
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals('Database not connected', $e->getMessage());
+        }
+    }
+
+    public function test_disconnect_02()
+    {
+        $db = SimpleDBI::conn();
+
+        $db->begin();
+
+        try {
+            $db->disconnect();
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals('Cannot disconnect while a transaction is in progress', $e->getMessage());
+        }
+
+        try {
+            $db->rollback();
+            $db->disconnect();
+        } catch (SimpleDBIException $e) {
+            $this->fail();
         }
     }
 

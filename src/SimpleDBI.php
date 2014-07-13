@@ -49,7 +49,7 @@ class SimpleDBI
     public function getPDO()
     {
         if (!($this->pdo instanceof PDO)) {
-            throw new PDOException('Database not connected');
+            throw new SimpleDBIException('Database not connected');
         }
         return $this->pdo;
     }
@@ -83,7 +83,7 @@ class SimpleDBI
     public function disconnect()
     {
         if (count($this->trans_stack) > 0) {
-            throw new PDOException('Cannot disconnect while a transaction is in progress');
+            throw new SimpleDBIException('Cannot disconnect while a transaction is in progress');
         }
         $this->pdo = null;
         unset(static::$instances[$this->dsn]);
@@ -245,7 +245,7 @@ class SimpleDBI
      *
      * @param string $sql
      * @param array $params
-     * @throws PDOException
+     * @throws SimpleDBIException
      */
     public function query($sql, array $params = array())
     {
@@ -254,7 +254,7 @@ class SimpleDBI
         $this->st = $pdo->prepare($sql);
         $r = $this->st->execute($params);
         if (!$r) {
-            throw new PDOException("query failed: {$sql}");
+            throw new SimpleDBIException("query failed: {$sql}");
         }
         $this->onQueryEnd($this->st->queryString, $params);
     }
@@ -433,13 +433,13 @@ class SimpleDBI
     /**
      * トランザクションをコミットする
      *
-     * @throws PDOException
+     * @throws SimpleDBIException
      */
     public function commit()
     {
         if (count($this->trans_stack) <= 1) {
             if ($this->is_uncommitable) {
-                throw new PDOException('Cannot commit because a nested transaction was rolled back');
+                throw new SimpleDBIException('Cannot commit because a nested transaction was rolled back');
             } else {
                 $this->getPDO()->commit();
                 $this->onQueryEnd('COMMIT');
