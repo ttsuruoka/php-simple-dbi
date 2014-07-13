@@ -9,23 +9,23 @@
 class SimpleDBI
 {
     protected static $instances = array();
-    protected $pdo = null;      // PDO インスタンス
-    protected $dsn = null;      // DSN
-    protected $st = null;       // SimpleDBIStatement ステートメント
+    protected $destination;
+    protected $pdo;
+    protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
     protected $is_uncommitable = false; // commit可能な状態かどうか
 
-    protected function __construct($dsn, $username, $password, $driver_options)
+    protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
+        $this->destination = $destination;
+
         $this->pdo = new PDO($dsn, $username, $password, $driver_options);
 
         // エラーモードを例外に設定
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         // PDOStatement ではなく SimpleDBIStatement を使うように設定
-        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('SimpleDBIStatement', array($this->pdo)));
-
-        $this->dsn = $dsn;
+        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('SimpleDBIStatement'));
     }
 
     /**
@@ -34,14 +34,24 @@ class SimpleDBI
      * このメソッドは、SimpleDBI クラスのサブクラスでオーバーライドして使われます。
      *
      * @param  string $destination 接続先
+     * @throws InvalidArgumentException
      * @return array  DSN などの接続設定の配列
      */
     public static function getConnectSettings($destination = null)
     {
-        $dsn = DB_DSN;
-        $username = DB_USERNAME;
-        $password = DB_PASSWORD;
-        $driver_options = array();
+        if ($destination === null) {
+            $dsn = DB_DSN;
+            $username = DB_USERNAME;
+            $password = DB_PASSWORD;
+            $driver_options = array();
+        } elseif ($destination === 'slave') {
+            $dsn = DB_SLAVE_DSN;
+            $username = DB_SLAVE_USERNAME;
+            $password = DB_SLAVE_PASSWORD;
+            $driver_options = array();
+        } else {
+            throw new InvalidArgumentException("Unknown destination: {$destination}");
+        }
 
         return array($dsn, $username, $password, $driver_options);
     }
@@ -68,16 +78,16 @@ class SimpleDBI
      */
     public static function conn($destination = null)
     {
-        list($dsn, $username, $password, $driver_options) = static::getConnectSettings($destination);
-
-        if (isset(static::$instances[$dsn])) {
-            return static::$instances[$dsn];
+        if (isset(static::$instances[$destination])) {
+            return static::$instances[$destination];
         }
 
-        static::$instances[$dsn] = new static($dsn, $username, $password, $driver_options);
-        static::$instances[$dsn]->onConnect();
+        list($dsn, $username, $password, $driver_options) = static::getConnectSettings($destination);
 
-        return static::$instances[$dsn];
+        static::$instances[$destination] = new static($destination, $dsn, $username, $password, $driver_options);
+        static::$instances[$destination]->onConnect();
+
+        return static::$instances[$destination];
     }
 
     public function disconnect()
@@ -85,8 +95,8 @@ class SimpleDBI
         if (count($this->trans_stack) > 0) {
             throw new SimpleDBIException('Cannot disconnect while a transaction is in progress');
         }
+        unset(static::$instances[$this->destination]);
         $this->pdo = null;
-        unset(static::$instances[$this->dsn]);
     }
 
     /**

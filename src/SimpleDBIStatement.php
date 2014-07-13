@@ -5,13 +5,7 @@
  */
 class SimpleDBIStatement extends PDOStatement
 {
-    protected $pdo;
     public $exec_time;
-
-    protected function __construct($pdo)
-    {
-        $this->pdo = $pdo;
-    }
 
     public function execute($params = array())
     {
