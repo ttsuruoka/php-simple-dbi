@@ -3,26 +3,21 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
 {
     public static function setUpBeforeClass()
     {
-        if (!defined('DB_DSN')) {
-            if (!isset($GLOBALS['DB_DSN'])) {
-                throw new Exception('DB_DSN is not defined');
+        $load_constant = function($name) {
+            if (!defined($name)) {
+                if (!isset($GLOBALS[$name])) {
+                    throw new Exception("{$name} is not defined");
+                }
+                define($name, $GLOBALS[$name]);
             }
-            define('DB_DSN', $GLOBALS['DB_DSN']);
-        }
+        };
 
-        if (!defined('DB_USERNAME')) {
-            if (!isset($GLOBALS['DB_USERNAME'])) {
-                throw new Exception('DB_USERNAME is not defined');
-            }
-            define('DB_USERNAME', $GLOBALS['DB_USERNAME']);
-        }
-
-        if (!defined('DB_PASSWORD')) {
-            if (!isset($GLOBALS['DB_PASSWORD'])) {
-                throw new Exception('DB_PASSWORD is not defined');
-            }
-            define('DB_PASSWORD', $GLOBALS['DB_PASSWORD']);
-        }
+        $load_constant('DB_DSN');
+        $load_constant('DB_USERNAME');
+        $load_constant('DB_PASSWORD');
+        $load_constant('DB_SLAVE_DSN');
+        $load_constant('DB_SLAVE_USERNAME');
+        $load_constant('DB_SLAVE_PASSWORD');
     }
 
     public function test_getConnectSettings()
@@ -38,6 +33,107 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
     {
         $db = SimpleDBI::conn();
         $this->assertInstanceOf('SimpleDBI', $db);
+    }
+
+    /**
+     * disconnect によって DB 接続を切断できることをテストする
+     */
+    public function test_disconnect()
+    {
+        $db = SimpleDBI::conn();
+
+        $value = $db->value('SELECT 1');
+        $this->assertEquals(1, $value);
+
+        $db->disconnect();
+
+        try {
+            $db->value('SELECT 1');
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals('Database not connected', $e->getMessage());
+        }
+
+        try {
+            $db->begin();
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals('Database not connected', $e->getMessage());
+        }
+
+        try {
+            $db->lastInsertId();
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals('Database not connected', $e->getMessage());
+        }
+    }
+
+    /**
+     * トランザクション中は disconnect できないことをテストする
+     */
+    public function test_disconnect_02()
+    {
+        $db = SimpleDBI::conn();
+
+        $db->begin();
+
+        try {
+            $db->disconnect();
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals('Cannot disconnect while a transaction is in progress', $e->getMessage());
+        }
+
+        try {
+            $db->rollback();
+            $db->disconnect();
+        } catch (SimpleDBIException $e) {
+            $this->fail();
+        }
+    }
+
+    /**
+     * disconnect によって接続が切断されることをテストする
+     */
+    public function test_disconnect_03()
+    {
+        $db = SimpleDBI::conn();
+
+        $row = $db->row('SHOW STATUS LIKE "Threads_connected"');
+        $connected_a = $row['Value'];
+
+        $this->assertGreaterThan(0, $connected_a);
+
+        $db2 = SimpleDBI::conn('slave');
+
+        $row = $db->row('SHOW STATUS LIKE "Threads_connected"');
+        $connected_b = $row['Value'];
+
+        $this->assertEquals($connected_a + 1, $connected_b);
+
+        $db2->disconnect();
+
+        $row = $db->row('SHOW STATUS LIKE "Threads_connected"');
+        $connected_c = $row['Value'];
+
+        $this->assertEquals($connected_a, $connected_c);
+    }
+
+    /**
+     * conn/disconnect を繰り返せることをテストする
+     */
+    public function test_disconnect_04()
+    {
+        $db = SimpleDBI::conn();
+        $value = $db->value('SELECT 1');
+        $this->assertEquals(1, $value);
+        $db->disconnect();
+
+        $db = SimpleDBI::conn();
+        $value = $db->value('SELECT 1');
+        $this->assertEquals(1, $value);
+        $db->disconnect();
     }
 
     public function test_parseSQL()

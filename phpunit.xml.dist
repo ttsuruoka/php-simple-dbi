@@ -27,6 +27,9 @@
     <var name="DB_DSN" value="mysql:dbname=php_simple_dbi_test;host=localhost" />
     <var name="DB_USERNAME" value="root" />
     <var name="DB_PASSWORD" value="" />
+    <var name="DB_SLAVE_DSN" value="mysql:dbname=php_simple_dbi_test;host=localhost" />
+    <var name="DB_SLAVE_USERNAME" value="root" />
+    <var name="DB_SLAVE_PASSWORD" value="" />
   </php>
 
  </phpunit>

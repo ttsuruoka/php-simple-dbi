@@ -8,23 +8,24 @@
 
 class SimpleDBI
 {
-    protected $pdo = null;      // PDO インスタンス
-    protected $dsn = null;      // DSN
-    protected $st = null;       // SimpleDBIStatement ステートメント
+    protected static $instances = array();
+    protected $destination;
+    protected $pdo;
+    protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
     protected $is_uncommitable = false; // commit可能な状態かどうか
 
-    protected function __construct($dsn, $username, $password, $driver_options)
+    protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
+        $this->destination = $destination;
+
         $this->pdo = new PDO($dsn, $username, $password, $driver_options);
 
         // エラーモードを例外に設定
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         // PDOStatement ではなく SimpleDBIStatement を使うように設定
-        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('SimpleDBIStatement', array($this->pdo)));
-
-        $this->dsn = $dsn;
+        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('SimpleDBIStatement'));
     }
 
     /**
@@ -33,16 +34,34 @@ class SimpleDBI
      * このメソッドは、SimpleDBI クラスのサブクラスでオーバーライドして使われます。
      *
      * @param  string $destination 接続先
+     * @throws InvalidArgumentException
      * @return array  DSN などの接続設定の配列
      */
     public static function getConnectSettings($destination = null)
     {
-        $dsn = DB_DSN;
-        $username = DB_USERNAME;
-        $password = DB_PASSWORD;
-        $driver_options = array();
+        if ($destination === null) {
+            $dsn = DB_DSN;
+            $username = DB_USERNAME;
+            $password = DB_PASSWORD;
+            $driver_options = array();
+        } elseif ($destination === 'slave') {
+            $dsn = DB_SLAVE_DSN;
+            $username = DB_SLAVE_USERNAME;
+            $password = DB_SLAVE_PASSWORD;
+            $driver_options = array();
+        } else {
+            throw new InvalidArgumentException("Unknown destination: {$destination}");
+        }
 
         return array($dsn, $username, $password, $driver_options);
+    }
+
+    public function getPDO()
+    {
+        if (!($this->pdo instanceof PDO)) {
+            throw new SimpleDBIException('Database not connected');
+        }
+        return $this->pdo;
     }
 
     /**
@@ -59,18 +78,25 @@ class SimpleDBI
      */
     public static function conn($destination = null)
     {
-        static $instances = array();
+        if (isset(static::$instances[$destination])) {
+            return static::$instances[$destination];
+        }
 
         list($dsn, $username, $password, $driver_options) = static::getConnectSettings($destination);
 
-        if (isset($instances[$dsn])) {
-            return $instances[$dsn];
+        static::$instances[$destination] = new static($destination, $dsn, $username, $password, $driver_options);
+        static::$instances[$destination]->onConnect();
+
+        return static::$instances[$destination];
+    }
+
+    public function disconnect()
+    {
+        if (count($this->trans_stack) > 0) {
+            throw new SimpleDBIException('Cannot disconnect while a transaction is in progress');
         }
-
-        $instances[$dsn] = new static($dsn, $username, $password, $driver_options);
-        $instances[$dsn]->onConnect();
-
-        return $instances[$dsn];
+        unset(static::$instances[$this->destination]);
+        $this->pdo = null;
     }
 
     /**
@@ -102,7 +128,8 @@ class SimpleDBI
 
     protected function setStatementClass($statement_class)
     {
-        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array($statement_class, array($this)));
+        $pdo = $this->getPDO();
+        $pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array($statement_class, array($this)));
     }
 
     /**
@@ -228,15 +255,16 @@ class SimpleDBI
      *
      * @param string $sql
      * @param array $params
-     * @throws PDOException
+     * @throws SimpleDBIException
      */
     public function query($sql, array $params = array())
     {
+        $pdo = $this->getPDO();
         list($sql, $params) = self::parseSQL($sql, $params);
-        $this->st = $this->pdo->prepare($sql);
+        $this->st = $pdo->prepare($sql);
         $r = $this->st->execute($params);
         if (!$r) {
-            throw new PDOException("query failed: {$sql}");
+            throw new SimpleDBIException("query failed: {$sql}");
         }
         $this->onQueryEnd($this->st->queryString, $params);
     }
@@ -405,7 +433,7 @@ class SimpleDBI
     public function begin()
     {
         if (count($this->trans_stack) == 0) {
-            $this->pdo->beginTransaction();
+            $this->getPDO()->beginTransaction();
             $this->onQueryEnd('BEGIN');
             $this->is_uncommitable = false;
         }
@@ -415,15 +443,15 @@ class SimpleDBI
     /**
      * トランザクションをコミットする
      *
-     * @throws PDOException
+     * @throws SimpleDBIException
      */
     public function commit()
     {
         if (count($this->trans_stack) <= 1) {
             if ($this->is_uncommitable) {
-                throw new PDOException('Cannot commit because a nested transaction was rolled back');
+                throw new SimpleDBIException('Cannot commit because a nested transaction was rolled back');
             } else {
-                $this->pdo->commit();
+                $this->getPDO()->commit();
                 $this->onQueryEnd('COMMIT');
             }
         }
@@ -437,7 +465,7 @@ class SimpleDBI
     public function rollback()
     {
         if (count($this->trans_stack) <= 1) {
-            $this->pdo->rollBack();
+            $this->getPDO()->rollBack();
             $this->onQueryEnd('ROLLBACK');
         } else {
             $this->is_uncommitable = true;
@@ -453,7 +481,7 @@ class SimpleDBI
      */
     public function lastInsertId($name = null)
     {
-        return $this->pdo->lastInsertId($name);
+        return $this->getPDO()->lastInsertId($name);
     }
 
     /**
