@@ -10,6 +10,10 @@ class SimpleDBI
 {
     protected static $instances = array();
     protected $destination;
+    protected $dsn;
+    protected $username;
+    protected $password;
+    protected $driver_options;
     protected $pdo;
     protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
@@ -18,6 +22,10 @@ class SimpleDBI
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
         $this->destination = $destination;
+        $this->dsn = $dsn;
+        $this->username = $username;
+        $this->password = $password;
+        $this->driver_options = $driver_options;
 
         $this->pdo = new PDO($dsn, $username, $password, $driver_options);
 
@@ -26,6 +34,39 @@ class SimpleDBI
 
         // PDOStatement ではなく SimpleDBIStatement を使うように設定
         $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('SimpleDBIStatement'));
+    }
+
+    public function getDestination()
+    {
+        $this->destination;
+    }
+
+    public function getDSN()
+    {
+        return $this->dsn;
+    }
+
+    public function getUserName()
+    {
+        return $this->username;
+    }
+
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    public function getDriverOptions()
+    {
+        return $this->driver_options;
+    }
+
+    public function getPDO()
+    {
+        if (!($this->pdo instanceof PDO)) {
+            throw new SimpleDBIException('Database not connected');
+        }
+        return $this->pdo;
     }
 
     /**
@@ -54,14 +95,6 @@ class SimpleDBI
         }
 
         return array($dsn, $username, $password, $driver_options);
-    }
-
-    public function getPDO()
-    {
-        if (!($this->pdo instanceof PDO)) {
-            throw new SimpleDBIException('Database not connected');
-        }
-        return $this->pdo;
     }
 
     /**

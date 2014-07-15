@@ -33,6 +33,10 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
     {
         $db = SimpleDBI::conn();
         $this->assertInstanceOf('SimpleDBI', $db);
+        $this->assertEquals(DB_DSN, $db->getDSN());
+        $this->assertEquals(DB_USERNAME, $db->getUserName());
+        $this->assertEquals(DB_PASSWORD, $db->getPassword());
+        $this->assertEquals(array(), $db->getDriverOptions());
     }
 
     /**
