@@ -38,7 +38,7 @@ class SimpleDBI
 
     public function getDestination()
     {
-        $this->destination;
+        return $this->destination;
     }
 
     public function getDSN()
