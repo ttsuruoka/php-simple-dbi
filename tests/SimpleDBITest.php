@@ -119,10 +119,20 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
 
         $db2->disconnect();
 
-        $row = $db->row('SHOW STATUS LIKE "Threads_connected"');
-        $connected_c = $row['Value'];
+        $retry = 3;
+        $disconnected = false;
+        for ($i = 0; $i <= $retry; $i++) {
+            $row = $db->row('SHOW STATUS LIKE "Threads_connected"');
+            $connected_c = $row['Value'];
+            if ($connected_a == $connected_c) {
+                $disconnected = true;
+                break;
+            }
+            // すぐに接続数に反映されないことがあるので少し待つ
+            sleep(1);
+        }
 
-        $this->assertEquals($connected_a, $connected_c);
+        $this->assertTrue($disconnected);
     }
 
     /**
