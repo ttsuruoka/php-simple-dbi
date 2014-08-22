@@ -232,4 +232,5 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         $this->assertEquals('SELECT * FROM test WHERE id IN (:foo_bar, :foo_baz, :foo_qux)', $sql);
         $this->assertEquals(array(':foo_bar' => 10, ':foo_baz' => 20, ':foo_qux' => 40), $params);
     }
+
 }

@@ -18,6 +18,7 @@ class SimpleDBI
     protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
     protected $is_uncommitable = false; // commit可能な状態かどうか
+    static protected $proxy_list = [];
 
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
@@ -292,10 +293,8 @@ class SimpleDBI
      */
     public function query($sql, array $params = array())
     {
-        $pdo = $this->getPDO();
         list($sql, $params) = self::parseSQL($sql, $params);
-        $this->st = $pdo->prepare($sql);
-        $r = $this->st->execute($params);
+        $r = $this->execute_with_proxy($sql, $params);
         if (!$r) {
             throw new SimpleDBIException("query failed: {$sql}");
         }
@@ -526,4 +525,79 @@ class SimpleDBI
     {
         return $this->st->rowCount();
     }
+
+    protected function setup($proxy_list){
+        if(count(self::$proxy_list) == 0){
+            self::$proxy_list[] = new SimpleDBI_Proxy_Execute();
+        }
+        $next_proxy = array_shift($proxy_list);
+
+        foreach($proxy_list as $proxy){
+            $proxy->next_proxy = $next_proxy;
+            $next_proxy = $proxy;
+        }
+        return $next_proxy;
+    }
+
+    protected function execute_with_proxy($sql, $params)
+    {
+        $proxy = $this->setup(self::$proxy_list);
+        return $this->setup(self::$proxy_list)->execute($this, $sql, $params);
+    }
+
+    public function execute_without_proxy($sql, $params, $save_st = false)
+    {
+        $st = $this->getPDO()->prepare($sql);
+        if($save_st){
+            $this->st = $st;
+        }
+        $this->st = $st;
+        return $st->execute($params);
+    }
+
+    static public function addProxy($proxy)
+    {
+        if(count(self::$proxy_list) == 0){
+            self::$proxy_list[] = new SimpleDBI_Proxy_Execute();
+        }
+        self::$proxy_list[] = $proxy;
+    }
+}
+
+class SimpleDBI_Proxy_Base
+{
+    public $next_proxy;
+
+    public function execute($dbh, $sql, $params)
+    {
+        return $this->next_proxy->execute($dbh, $sql, $params);
+    }
+}
+
+class SimpleDBI_Proxy_Execute extends SimpleDBI_Proxy_Base
+{
+    public function execute($dbh, $sql, $params)
+    {
+        return $dbh->execute_without_proxy($sql, $params);
+    }
+}
+
+class SimpleDBI_Proxy_X extends SimpleDBI_Proxy_Base
+{
+    protected $handler;
+
+    public function __construct($handler)
+    {
+        $this->handler = $handler;
+    }
+
+    public function execute($dbh, $sql, $params)
+    {
+        $h = $this->handler;
+        return $h(function($dbh, $sql, $params){ return parent::execute($dbh, $sql, $params); }, $dbh, $sql, $params);
+//        return $this->handler->(function($dbh, $sql, $params){ return parent::execute($dbh, $sql, $params); }, $dbh, $sql, $params);
+    }
+    
+    // $r = parent::execute($dbh, $sql, $params);
+    # TBD.
 }
