@@ -37,19 +37,19 @@ class SimpleDBI_proxy_Test extends PHPUnit_Framework_TestCase
         $bar_id = $db->lastInsertId();
         $bar_key = "user:{$bar_id}";
 
-        $foo_user = $db->row('SELECT * FROM users WHERE id = ?', [ $foo_id ]);
-        $bar_user = $db->row('SELECT * FROM users WHERE id = ?', [ $bar_id ]);
+        $foo_user = $db->row('SELECT * FROM users WHERE id = ?', array($foo_id));
+        $bar_user = $db->row('SELECT * FROM users WHERE id = ?', array($bar_id));
         $cache[$foo_key] = $foo_user;
         $cache[$bar_key] = $bar_user;
         $this->assertArrayHasKey($foo_key, $cache);
         $this->assertArrayHasKey($bar_key, $cache);
 
-        $db->query('DELETE FROM users WHERE id = ?', [ $foo_id ]);
+        $db->query('DELETE FROM users WHERE id = ?', array($foo_id));
         $this->assertFalse(array_key_exists($foo_key, $cache));
         $this->assertArrayHasKey($bar_key, $cache);
 
         $cache[$foo_key] = $foo_user;
-        $db->query('UPDATE users SET name = "B A R" WHERE id = ?', [ $bar_id ]);
+        $db->query('UPDATE users SET name = "B A R" WHERE id = ?', array($bar_id));
         $this->assertArrayHasKey($foo_key, $cache);
         $this->assertFalse(array_key_exists($bar_key, $cache));
     }
@@ -68,16 +68,16 @@ class SimpleDBI_proxy_Test extends PHPUnit_Framework_TestCase
         $db = SimpleDBI::conn();
         $db->query('INSERT INTO users (name) values ("foo")');
         $foo_id = $db->lastInsertId();
-        $db->query('INSERT INTO users_to (id, name) values (?, "foo")', [ $foo_id ]);
+        $db->query('INSERT INTO users_to (id, name) values (?, "foo")', array($foo_id));
 
         # update 'users' and select from 'users_to'
-        $db->query('UPDATE users SET name = ? WHERE id = ?', [ 'foo_new', $foo_id]);
-        $foo_user_to = $db->row('SELECT * FROM users_to WHERE id = ?', [ $foo_id ]);
+        $db->query('UPDATE users SET name = ? WHERE id = ?', array('foo_new', $foo_id));
+        $foo_user_to = $db->row('SELECT * FROM users_to WHERE id = ?', array($foo_id));
         $this->assertEquals('foo_new', $foo_user_to['name']);
 
         # delete 'users' and select from 'users_to'
-        $db->query('DELETE FROM users WHERE id = ?', [ $foo_id]);
-        $foo_user_to = $db->row('SELECT * FROM users_to WHERE id = ?', [ $foo_id ]);
+        $db->query('DELETE FROM users WHERE id = ?', array($foo_id));
+        $foo_user_to = $db->row('SELECT * FROM users_to WHERE id = ?', array($foo_id));
         $this->assertFalse($foo_user_to);
     }
 }
