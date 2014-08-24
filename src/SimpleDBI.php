@@ -18,6 +18,7 @@ class SimpleDBI
     protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
     protected $is_uncommitable = false; // commit可能な状態かどうか
+    static protected $proxy_chain = NULL;
     static protected $proxy_list = [];
 
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
@@ -529,15 +530,18 @@ class SimpleDBI
     }
 
     protected function setup($proxy_list){
-        $next_proxy = new SimpleDBI_Proxy_With_Handler(function($next_proxy, $dbh, $sql, $params){
-                return $dbh->execute_without_proxy($sql, $params, true);
-            });
+        if(self::$proxy_chain === NULL){
+            $next_proxy = new SimpleDBI_Proxy_With_Handler(function($next_proxy, $dbh, $sql, $params){
+                    return $dbh->execute_without_proxy($sql, $params, true);
+                });
 
-        foreach($proxy_list as $proxy){
-            $proxy->next_proxy = $next_proxy;
-            $next_proxy = $proxy;
+            foreach($proxy_list as $proxy){
+                $proxy->next_proxy = $next_proxy;
+                $next_proxy = $proxy;
+            }
+            self::$proxy_chain = $next_proxy;
         }
-        return $next_proxy;
+        return self::$proxy_chain;
     }
 
     protected function execute_with_proxy($sql, $params)
@@ -556,7 +560,14 @@ class SimpleDBI
 
     static public function addProxy($proxy)
     {
+        self::$proxy_chain = NULL;
         self::$proxy_list[] = $proxy;
+    }
+
+    static public function clearProxy()
+    {
+        self::$proxy_chain = NULL;
+        self::$proxy_list = [];
     }
 }
 
