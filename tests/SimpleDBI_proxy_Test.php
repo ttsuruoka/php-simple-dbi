@@ -21,7 +21,7 @@ class SimpleDBI_proxy_Test extends PHPUnit_Framework_TestCase
 
     public function test_proxy_clear_cache()
     {
-        $cache = [];
+        $cache = array();
         SimpleDBI::addProxy(new SimpleDBI_Proxy_With_Handler(function($next_proxy, $dbh, $sql, $params) use (&$cache){
                     if(preg_match('/^\s*(DELETE\s+FROM|UPDATE)\s+users\s+/', $sql)){
                         unset($cache["user:{$params[0]}"]);

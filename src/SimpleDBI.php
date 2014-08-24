@@ -19,7 +19,7 @@ class SimpleDBI
     protected $trans_stack = array();   // トランザクションのネストを管理する
     protected $is_uncommitable = false; // commit可能な状態かどうか
     static protected $proxy_chain = NULL;
-    static protected $proxy_list = [];
+    static protected $proxy_list = array();
 
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
@@ -566,7 +566,7 @@ class SimpleDBI
     static public function clearProxy()
     {
         self::$proxy_chain = NULL;
-        self::$proxy_list = [];
+        self::$proxy_list = array();
     }
 }
 
