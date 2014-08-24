@@ -18,6 +18,8 @@ class SimpleDBI
     protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
     protected $is_uncommitable = false; // commit可能な状態かどうか
+    static protected $proxy_chain = NULL;
+    static protected $proxy_list = array();
 
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
@@ -292,10 +294,9 @@ class SimpleDBI
      */
     public function query($sql, array $params = array())
     {
-        $pdo = $this->getPDO();
         list($sql, $params) = self::parseSQL($sql, $params);
-        $this->st = $pdo->prepare($sql);
-        $r = $this->st->execute($params);
+
+        $r = $this->execute_with_proxy($sql, $params);
         if (!$r) {
             throw new SimpleDBIException("query failed: {$sql}");
         }
@@ -525,5 +526,73 @@ class SimpleDBI
     public function rowCount()
     {
         return $this->st->rowCount();
+    }
+
+    protected function proxy_chain($proxy_list){
+        if(self::$proxy_chain === NULL){
+            $next_proxy = new SimpleDBI_Proxy_With_Handler(function($next_proxy, $dbh, $sql, $params){
+                    return $dbh->execute_without_proxy($sql, $params, true);
+                });
+
+            foreach($proxy_list as $proxy){
+                $proxy->next_proxy = $next_proxy;
+                $next_proxy = $proxy;
+            }
+            self::$proxy_chain = $next_proxy;
+        }
+        return self::$proxy_chain;
+    }
+
+    protected function execute_with_proxy($sql, $params)
+    {
+        return $this->proxy_chain(self::$proxy_list)->execute($this, $sql, $params);
+    }
+
+    public function execute_without_proxy($sql, $params, $save_st = false)
+    {
+        $st = $this->getPDO()->prepare($sql);
+        if($save_st){
+            $this->st = $st;
+        }
+        return $st->execute($params);
+    }
+
+    static public function addProxy($proxy)
+    {
+        self::$proxy_chain = NULL;
+        self::$proxy_list[] = $proxy;
+    }
+
+    static public function clearProxy()
+    {
+        self::$proxy_chain = NULL;
+        self::$proxy_list = array();
+    }
+}
+
+class SimpleDBI_Proxy_Base
+{
+    public $next_proxy;
+
+    public function next_proxy($dbh, $sql, $params)
+    {
+        return $this->next_proxy->execute($dbh, $sql, $params);
+    }
+}
+
+class SimpleDBI_Proxy_With_Handler extends SimpleDBI_Proxy_Base
+{
+    protected $handler;
+
+    public function __construct($handler)
+    {
+        $this->handler = $handler;
+    }
+
+    public function execute($dbh, $sql, $params)
+    {
+        $h = $this->handler;
+        $proxy = $this;
+        return $h(function($dbh, $sql, $params) use($proxy) { return $proxy->next_proxy($dbh, $sql, $params); }, $dbh, $sql, $params);
     }
 }
