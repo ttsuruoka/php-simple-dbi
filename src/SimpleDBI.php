@@ -592,6 +592,7 @@ class SimpleDBI_Proxy_With_Handler extends SimpleDBI_Proxy_Base
     public function execute($dbh, $sql, $params)
     {
         $h = $this->handler;
-        return $h(function($dbh, $sql, $params){ return $this->next_proxy($dbh, $sql, $params); }, $dbh, $sql, $params);
+        $proxy = $this;
+        return $h(function($dbh, $sql, $params) use($proxy) { return $proxy->next_proxy($dbh, $sql, $params); }, $dbh, $sql, $params);
     }
 }
