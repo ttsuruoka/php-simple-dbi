@@ -294,6 +294,8 @@ class SimpleDBI
     public function query($sql, array $params = array())
     {
         list($sql, $params) = self::parseSQL($sql, $params);
+
+//        $this->st = $this->getPDO()->prepare($sql); $r = $this->st->execute($params);
         $r = $this->execute_with_proxy($sql, $params);
         if (!$r) {
             throw new SimpleDBIException("query failed: {$sql}");
@@ -527,10 +529,9 @@ class SimpleDBI
     }
 
     protected function setup($proxy_list){
-        if(count(self::$proxy_list) == 0){
-            self::$proxy_list[] = new SimpleDBI_Proxy_Execute();
-        }
-        $next_proxy = array_shift($proxy_list);
+        $next_proxy = new SimpleDBI_Proxy_With_Handler(function($next_proxy, $dbh, $sql, $params){
+                return $dbh->execute_without_proxy($sql, $params, true);
+            });
 
         foreach($proxy_list as $proxy){
             $proxy->next_proxy = $next_proxy;
@@ -541,7 +542,6 @@ class SimpleDBI
 
     protected function execute_with_proxy($sql, $params)
     {
-        $proxy = $this->setup(self::$proxy_list);
         return $this->setup(self::$proxy_list)->execute($this, $sql, $params);
     }
 
@@ -551,15 +551,11 @@ class SimpleDBI
         if($save_st){
             $this->st = $st;
         }
-        $this->st = $st;
         return $st->execute($params);
     }
 
     static public function addProxy($proxy)
     {
-        if(count(self::$proxy_list) == 0){
-            self::$proxy_list[] = new SimpleDBI_Proxy_Execute();
-        }
         self::$proxy_list[] = $proxy;
     }
 }
@@ -574,15 +570,7 @@ class SimpleDBI_Proxy_Base
     }
 }
 
-class SimpleDBI_Proxy_Execute extends SimpleDBI_Proxy_Base
-{
-    public function execute($dbh, $sql, $params)
-    {
-        return $dbh->execute_without_proxy($sql, $params);
-    }
-}
-
-class SimpleDBI_Proxy_X extends SimpleDBI_Proxy_Base
+class SimpleDBI_Proxy_With_Handler extends SimpleDBI_Proxy_Base
 {
     protected $handler;
 
@@ -595,9 +583,5 @@ class SimpleDBI_Proxy_X extends SimpleDBI_Proxy_Base
     {
         $h = $this->handler;
         return $h(function($dbh, $sql, $params){ return parent::execute($dbh, $sql, $params); }, $dbh, $sql, $params);
-//        return $this->handler->(function($dbh, $sql, $params){ return parent::execute($dbh, $sql, $params); }, $dbh, $sql, $params);
     }
-    
-    // $r = parent::execute($dbh, $sql, $params);
-    # TBD.
 }
