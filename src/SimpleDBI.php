@@ -296,7 +296,6 @@ class SimpleDBI
     {
         list($sql, $params) = self::parseSQL($sql, $params);
 
-//        $this->st = $this->getPDO()->prepare($sql); $r = $this->st->execute($params);
         $r = $this->execute_with_proxy($sql, $params);
         if (!$r) {
             throw new SimpleDBIException("query failed: {$sql}");
@@ -529,7 +528,7 @@ class SimpleDBI
         return $this->st->rowCount();
     }
 
-    protected function setup($proxy_list){
+    protected function proxy_chain($proxy_list){
         if(self::$proxy_chain === NULL){
             $next_proxy = new SimpleDBI_Proxy_With_Handler(function($next_proxy, $dbh, $sql, $params){
                     return $dbh->execute_without_proxy($sql, $params, true);
@@ -546,7 +545,7 @@ class SimpleDBI
 
     protected function execute_with_proxy($sql, $params)
     {
-        return $this->setup(self::$proxy_list)->execute($this, $sql, $params);
+        return $this->proxy_chain(self::$proxy_list)->execute($this, $sql, $params);
     }
 
     public function execute_without_proxy($sql, $params, $save_st = false)
