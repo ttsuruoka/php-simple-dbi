@@ -574,7 +574,7 @@ class SimpleDBI_Proxy_Base
 {
     public $next_proxy;
 
-    public function execute($dbh, $sql, $params)
+    public function next_proxy($dbh, $sql, $params)
     {
         return $this->next_proxy->execute($dbh, $sql, $params);
     }
@@ -592,6 +592,6 @@ class SimpleDBI_Proxy_With_Handler extends SimpleDBI_Proxy_Base
     public function execute($dbh, $sql, $params)
     {
         $h = $this->handler;
-        return $h(function($dbh, $sql, $params){ return parent::execute($dbh, $sql, $params); }, $dbh, $sql, $params);
+        return $h(function($dbh, $sql, $params){ return $this->next_proxy($dbh, $sql, $params); }, $dbh, $sql, $params);
     }
 }
