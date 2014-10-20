@@ -225,11 +225,30 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         // IN 句の展開: named パラメータのとき + 数値添字配列
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id IN (:foo)', array('foo' => array(1 => 10, 4 => 40, 2 => 20)));
         $this->assertEquals('SELECT * FROM test WHERE id IN (:foo_1, :foo_4, :foo_2)', $sql);
-        $this->assertEquals(array(':foo_1' => 10, ':foo_2' => 20, ':foo_4' => 40), $params);
+        $this->assertEquals(array(':foo_1' => 10, ':foo_4' => 40, ':foo_2' => 20), $params);
 
         // IN 句の展開: named パラメータのとき + 文字添字配列
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id IN (:foo)', array('foo' => array('bar' => 10, 'baz' => 20, 'qux' => 40)));
         $this->assertEquals('SELECT * FROM test WHERE id IN (:foo_bar, :foo_baz, :foo_qux)', $sql);
         $this->assertEquals(array(':foo_bar' => 10, ':foo_baz' => 20, ':foo_qux' => 40), $params);
+    }
+
+    public function test_parseSQL_02()
+    {
+        // 空白を含む named パラメータは展開しない
+        try {
+            SimpleDBI::parseSQL('SELECT * FROM test WHERE id = :foo', array('foo' => array('foo bar' => 10)));
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals("Invalid placeholder name: :foo_foo bar", $e->getMessage());
+        }
+
+        // アルファベット以外の文字（セミコロン）を含む named パラメータは展開しない
+        try {
+            SimpleDBI::parseSQL('SELECT * FROM test WHERE id = :foo', array('foo' => array('foo;bar' => 10)));
+            $this->fail();
+        } catch (SimpleDBIException $e) {
+            $this->assertEquals("Invalid placeholder name: :foo_foo;bar", $e->getMessage());
+        }
     }
 }

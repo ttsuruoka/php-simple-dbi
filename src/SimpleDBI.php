@@ -219,7 +219,7 @@ class SimpleDBI
                 $unset_keys = array();
 
                 $sql = preg_replace_callback(
-                    '/:([A-Za-z_-]+)/',
+                    '/:([A-Za-z0-9_-]+)/',
                     function($matches) use (&$params, &$unset_keys) {
 
                         $name = $matches[0]; // :name 形式の文字列
@@ -233,9 +233,11 @@ class SimpleDBI
                             // パラメータが配列ではないときは、展開しない
                             return $name;
                         }
-                        $n = count($params[$key]);
                         foreach ($params[$key] as $i => $v) {
                             $name_i = "{$name}_{$i}";
+                            if (!preg_match('/^:([A-Za-z0-9_-]+)$/', $name_i)) {
+                                throw new SimpleDBIException("Invalid placeholder name: {$name_i}");
+                            }
                             $name_i_list[] = $name_i;
                             $params[$name_i] = $params[$key][$i];
                         }
