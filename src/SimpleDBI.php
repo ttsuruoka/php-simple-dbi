@@ -528,4 +528,19 @@ class SimpleDBI
     {
         return $this->st->rowCount();
     }
+
+    /**
+     * Queryを実行してIteraterを取得する
+     *
+     * @param  string             $sql
+     * @param  array              $params
+     * @return StatementIterator
+     * @throws SimpleDBIException
+     */
+    public function iterator($sql, array $params = array())
+    {
+        $this->query($sql, $params);
+
+        return new SimpleDBIStatementIterator($this->st);
+    }
 }
