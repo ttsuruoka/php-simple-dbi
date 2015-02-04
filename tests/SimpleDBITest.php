@@ -40,6 +40,20 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         $this->assertEquals(array(), $db->getDriverOptions());
     }
 
+    public function test_iterator()
+    {
+        $db = SimpleDBI::conn();
+        $iterator = $db->iterator('SELECT 1');
+
+        $this->assertInstanceOf('SimpleDBIStatementIterator', $iterator);
+        $count = 0;
+        foreach ($iterator as $row) {
+            $this->assertEquals($row, array(1 => '1'));
+            $count++;
+        }
+        $this->assertEquals(1, $count);
+    }
+
     /**
      * disconnect によって DB 接続を切断できることをテストする
      */
