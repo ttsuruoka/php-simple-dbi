@@ -54,6 +54,96 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         $this->assertEquals(1, $count);
     }
 
+    public function test_iterator_statement_intaface()
+    {
+        $db = SimpleDBI::conn();
+        $iterator = $db->iterator('SELECT 1');
+
+        $this->assertInstanceOf('SimpleDBIStatementIterator', $iterator);
+
+        $this->assertFalse($iterator->valid());
+        $this->assertFalse($iterator->current());
+        $this->assertNull($iterator->key());
+
+        $iterator->rewind();
+
+        $this->assertTrue($iterator->valid());
+        $this->assertEquals($iterator->current(), array(1 => '1'));
+        $this->assertEquals($iterator->key(), 0);
+
+        $iterator = $db->iterator('SELECT 1');
+
+        $this->assertInstanceOf('SimpleDBIStatementIterator', $iterator);
+
+        $this->assertFalse($iterator->valid());
+        $this->assertFalse($iterator->current());
+        $this->assertNull($iterator->key());
+
+        $iterator->next();
+
+        $this->assertTrue($iterator->valid());
+        $this->assertEquals($iterator->current(), array(1 => '1'));
+        $this->assertEquals($iterator->key(), 0);
+
+        $iterator->next();
+
+        $this->assertFalse($iterator->valid());
+        $this->assertFalse($iterator->current());
+        $this->assertNull($iterator->key());
+
+        $iterator = $db->iterator('SHOW STATUS');
+
+        $this->assertInstanceOf('SimpleDBIStatementIterator', $iterator);
+
+        $this->assertFalse($iterator->valid());
+        $this->assertFalse($iterator->current());
+        $this->assertNull($iterator->key());
+
+        $iterator->next();
+        $iterator->next();
+
+        $this->assertTrue($iterator->valid());
+    }
+
+    /**
+     * @covers SimpleDBIStatementIterator::__construct
+     */
+    public function test_iterator_constructor()
+    {
+        $statement = $this->getMockBuilder('PDOStatement')->getMock();
+        $iterator = new SimpleDBIStatementIterator($statement);
+        $this->assertInstanceOf('SimpleDBIStatementIterator', $iterator);
+    }
+
+    public function test_iterator_no_match()
+    {
+        $db = SimpleDBI::conn();
+
+        $iterator = $db->iterator('SHOW STATUS LIKE "SIMPLE DBI TEST"');
+
+        $this->assertInstanceOf('SimpleDBIStatementIterator', $iterator);
+        $this->assertFalse($iterator->valid());
+        $this->assertFalse($iterator->current());
+        $this->assertNull($iterator->key());
+
+        $iterator->rewind();
+
+        $this->assertFalse($iterator->valid());
+        $this->assertFalse($iterator->current());
+        $this->assertNull($iterator->key());
+    }
+
+    public function test_iterator_twice_rewind()
+    {
+        $this->setExpectedException('SimpleDBIException', 'Can only iterate a Result once.');
+
+        $db = SimpleDBI::conn();
+        $iterator = $db->iterator('SELECT 1');
+
+        $iterator->rewind();
+        $iterator->rewind();
+    }
+
     /**
      * disconnect によって DB 接続を切断できることをテストする
      */
