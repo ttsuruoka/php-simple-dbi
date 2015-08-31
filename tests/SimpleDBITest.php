@@ -355,4 +355,12 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
             $this->assertEquals("Invalid placeholder name: :foo_foo;bar", $e->getMessage());
         }
     }
+
+    public function test_transactional()
+    {
+        $value = SimpleDBI::conn()->transactional(function(SimpleDBI $db) {
+            return $db->value('SELECT 1');
+        });
+        $this->assertEquals(1, $value);
+    }
 }
