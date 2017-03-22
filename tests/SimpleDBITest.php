@@ -355,4 +355,17 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
             $this->assertEquals("Invalid placeholder name: :foo_foo;bar", $e->getMessage());
         }
     }
+
+    public function test_parseSQL_03()
+    {
+        $db = SimpleDBI::conn();
+        $sql = 'SELECT 1  LIMIT :limit  OFFSET :offset';
+        $pdo = $db->getPDO();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':limit', 2, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', 3, \PDO::PARAM_INT);
+        $res = $stmt->execute();
+        $this->assertTrue($res);
+    }
+
 }
