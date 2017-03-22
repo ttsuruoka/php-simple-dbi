@@ -10,7 +10,7 @@ php:
   - hhvm
 
 before_script:
-  - composer install --no-dev
+  - composer install
   - mysql -e 'CREATE DATABASE php_simple_dbi_test'
 
 script:
