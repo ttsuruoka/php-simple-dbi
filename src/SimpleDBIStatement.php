@@ -7,7 +7,7 @@ class SimpleDBIStatement extends PDOStatement
 {
     public $exec_time;
 
-    public function execute($params = array())
+    public function execute($params = null)
     {
         $ts = microtime(true);
         $r = parent::execute($params);
