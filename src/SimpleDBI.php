@@ -543,4 +543,22 @@ class SimpleDBI
 
         return new SimpleDBIStatementIterator($this->st);
     }
+
+    /**
+     * @param \Closure $func The function to execute transactionally.
+     * @return mixed The value returned by $func
+     * @throws \Exception
+     */
+    public function transactional(Closure $func)
+    {
+        $this->begin();
+        try {
+            $res = $func($this);
+            $this->commit();
+            return $res;
+        } catch (Exception $e) {
+            $this->rollback();
+            throw $e;
+        }
+    }
 }

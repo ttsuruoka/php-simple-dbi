@@ -368,4 +368,11 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
         $this->assertTrue($res);
     }
 
+    public function test_transactional()
+    {
+        $value = SimpleDBI::conn()->transactional(function(SimpleDBI $db) {
+            return $db->value('SELECT 1');
+        });
+        $this->assertEquals(1, $value);
+    }
 }
