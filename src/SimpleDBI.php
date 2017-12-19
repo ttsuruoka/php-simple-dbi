@@ -17,7 +17,7 @@ class SimpleDBI
     protected $pdo;
     protected $st;                      // SimpleDBIStatement ステートメント
     protected $trans_stack = array();   // トランザクションのネストを管理する
-    protected $is_uncommitable = false; // commit可能な状態かどうか
+    protected $is_uncommittable = false; // commit可能な状態かどうか
 
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
     {
@@ -470,7 +470,7 @@ class SimpleDBI
         if (count($this->trans_stack) == 0) {
             $this->getPDO()->beginTransaction();
             $this->onQueryEnd('BEGIN');
-            $this->is_uncommitable = false;
+            $this->is_uncommittable = false;
         }
         array_push($this->trans_stack, 'A');
     }
@@ -483,7 +483,7 @@ class SimpleDBI
     public function commit()
     {
         if (count($this->trans_stack) <= 1) {
-            if ($this->is_uncommitable) {
+            if ($this->is_uncommittable) {
                 throw new SimpleDBIException('Cannot commit because a nested transaction was rolled back');
             } else {
                 $this->getPDO()->commit();
@@ -503,7 +503,7 @@ class SimpleDBI
             $this->getPDO()->rollBack();
             $this->onQueryEnd('ROLLBACK');
         } else {
-            $this->is_uncommitable = true;
+            $this->is_uncommittable = true;
         }
         array_pop($this->trans_stack);
     }
