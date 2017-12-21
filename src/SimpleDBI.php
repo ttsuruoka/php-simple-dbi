@@ -418,6 +418,24 @@ class SimpleDBI
     }
 
     /**
+     * Delete row[s] on the table with specified condition[s]
+     * @param string $table
+     * @param array $where
+     */
+    public function delete($table, $where = array())
+    {
+        $data = array();
+        $condition = array();
+        foreach ($where as $k => $v) {
+            $condition[] = sprintf('%s = ?');
+            $data[] = $v;
+        }
+
+        $sql = sprintf('DELETE FROM %s WHERE %s', $table, implode(' AND ', $condition) );
+        $this->query($sql, $data);
+    }
+
+    /**
      * 単純な検索クエリーを実行する @DEPRECATED
      *
      * 使用例：
