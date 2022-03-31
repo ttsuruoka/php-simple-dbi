@@ -8,7 +8,7 @@
 
 class SimpleDBI
 {
-    protected static $instances = array();
+    protected static $instances = [];
     protected $destination;
     protected $dsn;
     protected $username;
@@ -16,7 +16,7 @@ class SimpleDBI
     protected $driver_options;
     protected $pdo;
     protected $st;                      // SimpleDBIStatement ステートメント
-    protected $trans_stack = array();   // トランザクションのネストを管理する
+    protected $trans_stack = [];   // トランザクションのネストを管理する
     protected $is_uncommittable = false; // commit可能な状態かどうか
 
     protected function __construct($destination, $dsn, $username, $password, $driver_options)
@@ -84,12 +84,12 @@ class SimpleDBI
             $dsn = DB_DSN;
             $username = DB_USERNAME;
             $password = DB_PASSWORD;
-            $driver_options = array();
+            $driver_options = [];
         } elseif ($destination === 'slave') {
             $dsn = DB_SLAVE_DSN;
             $username = DB_SLAVE_USERNAME;
             $password = DB_SLAVE_PASSWORD;
-            $driver_options = array();
+            $driver_options = [];
         } else {
             throw new InvalidArgumentException("Unknown destination: {$destination}");
         }
@@ -155,7 +155,7 @@ class SimpleDBI
      * @param  array  $params SQL にバインドされたパラメータ
      * @return void
      */
-    protected function onQueryEnd($sql, array $params = array())
+    protected function onQueryEnd($sql, array $params = [])
     {
     }
 
@@ -177,7 +177,7 @@ class SimpleDBI
      * @param array $params
      * @return array パースされた SQL とパラメータ
      */
-    public static function parseSQL($sql, array $params = array())
+    public static function parseSQL($sql, array $params = [])
     {
         //
         // IN 句の展開
@@ -216,7 +216,7 @@ class SimpleDBI
                 // array(':foo_0' => 10, ':foo_1' => 20, ...) に展開する
                 //
 
-                $unset_keys = array();
+                $unset_keys = [];
 
                 $sql = preg_replace_callback(
                     '/:([A-Za-z0-9_-]+)/',
@@ -228,7 +228,7 @@ class SimpleDBI
                         // 「:」がついているときとついていないとき両方に対応
                         $key = isset($params[$matches[1]]) ? $matches[1] : $matches[0];
 
-                        $name_i_list = array();
+                        $name_i_list = [];
                         if (!is_array($params[$key])) {
                             // パラメータが配列ではないときは、展開しない
                             return $name;
@@ -257,14 +257,14 @@ class SimpleDBI
                 // 位置パラメータのとき
                 $a = explode('?', $sql);
                 $sql = array_shift($a);
-                $t = array();
+                $t = [];
                 foreach ($params as $k => $v) {
                     if (is_array($v)) {
-                        if ($v === array()) {
+                        if ($v === []) {
                             $sql .= '?';
                             $t[] = null;
                         } else {
-                            $sql .= join(', ', array_fill(0, count($v), '?'));
+                            $sql .= implode(', ', array_fill(0, count($v), '?'));
                             $t = array_merge($t, $v);
                         }
                     } else {
@@ -282,7 +282,7 @@ class SimpleDBI
 
     public function getLastExecTime()
     {
-        return isset($this->st->exec_time) ? $this->st->exec_time : null;
+        return $this->st->exec_time ?? null;
     }
 
     /**
@@ -292,7 +292,7 @@ class SimpleDBI
      * @param array $params
      * @throws SimpleDBIException
      */
-    public function query($sql, array $params = array())
+    public function query($sql, array $params = [])
     {
         $pdo = $this->getPDO();
         list($sql, $params) = self::parseSQL($sql, $params);
@@ -311,7 +311,7 @@ class SimpleDBI
      * @param array $params
      * @return array|boolean 結果セットから最初の1行を配列で返す。結果が見つからなかったとき false を返す
      */
-    public function row($sql, array $params = array())
+    public function row($sql, array $params = [])
     {
         $rows = $this->rows($sql, $params);
 
@@ -325,12 +325,12 @@ class SimpleDBI
      * @param array $params
      * @return array 結果セットからすべての行を配列で返す。結果が見つからなかったとき空配列を返す
      */
-    public function rows($sql, array $params = array())
+    public function rows($sql, array $params = [])
     {
         $this->query($sql, $params);
         $rows = $this->st->fetchAll(PDO::FETCH_ASSOC);
 
-        return $rows ? $rows : array();
+        return $rows ?: [];
     }
 
     /**
@@ -340,7 +340,7 @@ class SimpleDBI
      * @param array $params
      * @return mixed 結果セットの最初の1行の最初の値を返す。結果が見つからなかったとき false を返す
      */
-    public function value($sql, array $params = array())
+    public function value($sql, array $params = [])
     {
         $row = $this->row($sql, $params);
 
@@ -355,11 +355,11 @@ class SimpleDBI
      * @param int $column_number
      * @return array
      */
-    public function columns($sql, array $params = array(), $column_number = 0)
+    public function columns($sql, array $params = [], $column_number = 0)
     {
         $this->query($sql, $params);
         $rows = $this->st->fetchAll(PDO::FETCH_COLUMN, $column_number);
-        return $rows ? $rows : array();
+        return $rows ?: [];
     }
 
     /**
@@ -432,7 +432,7 @@ class SimpleDBI
      *                       select_expr キー：SELECT で取り出すカラム。デフォルトは * （全カラム）
      * @return array 取得結果を配列で返す。結果が見つからなかったとき空配列を返す
      */
-    public function search($table, $where, $params, $order = null, $limit = null, $options = array())
+    public function search($table, $where, $params, $order = null, $limit = null, $options = [])
     {
         // SELECT で取り出すカラムを指定
         $select_expr = '*';
@@ -537,7 +537,7 @@ class SimpleDBI
      * @return StatementIterator
      * @throws SimpleDBIException
      */
-    public function iterator($sql, array $params = array())
+    public function iterator($sql, array $params = [])
     {
         $this->query($sql, $params);
 

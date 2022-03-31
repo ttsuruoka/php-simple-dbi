@@ -26,7 +26,7 @@ class SimpleDBITest extends PHPUnit\Framework\TestCase
         $this->assertEquals(DB_DSN, $dsn);
         $this->assertEquals(DB_USERNAME, $username);
         $this->assertEquals(DB_PASSWORD, $password);
-        $this->assertEquals(array(), $driver_options);
+        $this->assertEquals([], $driver_options);
     }
 
     public function test_conn()
@@ -37,7 +37,7 @@ class SimpleDBITest extends PHPUnit\Framework\TestCase
         $this->assertEquals(DB_DSN, $db->getDSN());
         $this->assertEquals(DB_USERNAME, $db->getUserName());
         $this->assertEquals(DB_PASSWORD, $db->getPassword());
-        $this->assertEquals(array(), $db->getDriverOptions());
+        $this->assertEquals([], $db->getDriverOptions());
     }
 
     public function test_iterator()
@@ -259,7 +259,7 @@ class SimpleDBITest extends PHPUnit\Framework\TestCase
     {
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test');
         $this->assertEquals('SELECT * FROM test', $sql);
-        $this->assertEquals(array(), $params);
+        $this->assertEquals([], $params);
 
         // 通常のクエリーの展開: 位置パラメータひとつ
         list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id = ?', array(10));
@@ -287,7 +287,7 @@ class SimpleDBITest extends PHPUnit\Framework\TestCase
         $this->assertEquals(array(10, 20, 30, 50), $params);
 
         // IN 句の展開: ? に空の配列を割り当てようとしているとき
-        list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id IN (?)', array(array()));
+        list($sql, $params) = SimpleDBI::parseSQL('SELECT * FROM test WHERE id IN (?)', array([]));
         $this->assertEquals('SELECT * FROM test WHERE id IN (?)', $sql);
         $this->assertEquals(array(null), $params);
 
