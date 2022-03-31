@@ -107,7 +107,7 @@ class SimpleDBI
      * getConnectSettings() メソッドを呼び出します。
      *
      * @param  string    $destination 接続先
-     * @return SimpleDBI
+     * @return static
      */
     public static function conn($destination = null)
     {
