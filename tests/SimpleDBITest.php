@@ -1,7 +1,7 @@
 <?php
-class SimpleDBITest extends PHPUnit_Framework_TestCase
+class SimpleDBITest extends PHPUnit\Framework\TestCase
 {
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         $load_constant = function($name) {
             if (!defined($name)) {
@@ -135,7 +135,7 @@ class SimpleDBITest extends PHPUnit_Framework_TestCase
 
     public function test_iterator_twice_rewind()
     {
-        $this->setExpectedException('SimpleDBIException', 'Can only iterate a Result once.');
+        $this->expectException('SimpleDBIException', 'Can only iterate a Result once.');
 
         $db = SimpleDBI::conn();
         $iterator = $db->iterator('SELECT 1');

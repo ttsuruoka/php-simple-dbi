@@ -16,7 +16,7 @@ class SimpleDBIStatementIterator implements Iterator
         $this->stmt = $stmt;
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         if ($this->rewinded == true) {
             throw new SimpleDBIException("Can only iterate a Result once.");
@@ -28,22 +28,22 @@ class SimpleDBIStatementIterator implements Iterator
         }
     }
 
-    public function valid()
+    public function valid(): bool
     {
         return (false !== $this->current);
     }
 
-    public function current()
+    public function current(): mixed
     {
         return $this->current;
     }
 
-    public function key()
+    public function key(): mixed
     {
         return $this->cursor;
     }
 
-    public function next()
+    public function next(): void
     {
         $row = $this->stmt->fetch(\PDO::FETCH_ASSOC);
         if ($row) {
