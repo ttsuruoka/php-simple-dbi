@@ -561,4 +561,14 @@ class SimpleDBI
             throw $e;
         }
     }
+
+    /**
+     * Disconnect all the connections.
+     *
+     * @return void
+     */
+    public static function reset(): void
+    {
+        self::$instances = [];
+    }
 }
